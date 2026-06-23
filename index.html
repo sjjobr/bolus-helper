@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bolus Helper">
+<meta name="theme-color" content="#0b1020">
+<title>Bolus Helper</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#161c2e; --card2:#1e2740; --line:#2a3350;
+    --txt:#eef2ff; --muted:#9aa6c8; --accent:#4f8cff; --accent2:#2563eb;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --pill:#243049;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--txt);
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    font-size:17px; line-height:1.4;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:16px 16px 120px;}
+  h1{font-size:22px; margin:6px 0 2px;}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 14px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;}
+  .row{display:flex; gap:10px; align-items:center;}
+  .between{justify-content:space-between;}
+  label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px;}
+  input,select{
+    width:100%; background:var(--card2); border:1px solid var(--line); color:var(--txt);
+    border-radius:12px; padding:13px 14px; font-size:18px; outline:none;
+  }
+  input:focus,select:focus{border-color:var(--accent);}
+  button{
+    font-family:inherit; cursor:pointer; border:none; border-radius:12px;
+    font-size:16px; font-weight:600; padding:13px 16px;
+  }
+  .btn-primary{background:var(--accent2); color:#fff; width:100%;}
+  .btn-ghost{background:var(--pill); color:var(--txt);}
+  .btn-sm{padding:9px 12px; font-size:14px;}
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tab{flex:1; text-align:center; background:var(--card); border:1px solid var(--line);
+       border-radius:12px; padding:11px 6px; font-size:14px; font-weight:600; color:var(--muted);}
+  .tab.active{background:var(--accent2); color:#fff; border-color:var(--accent2);}
+  .hide{display:none;}
+
+  /* Status */
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; text-align:center;}
+  .stat{background:var(--card2); border-radius:12px; padding:12px 6px;}
+  .stat .big{font-size:30px; font-weight:700; line-height:1;}
+  .stat .lbl{font-size:11px; color:var(--muted); margin-top:6px; text-transform:uppercase; letter-spacing:.5px;}
+  .stat .unit{font-size:12px; color:var(--muted);}
+  .src{font-size:12px; color:var(--muted); margin-top:10px;}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle;}
+
+  /* Food list */
+  .search{margin-bottom:10px;}
+  .cat{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin:14px 0 6px;}
+  .food{display:flex; justify-content:space-between; align-items:center; gap:10px;
+        padding:11px 12px; background:var(--card2); border-radius:11px; margin-bottom:7px;}
+  .food .nm{font-size:15px;}
+  .food .cb{font-size:13px; color:var(--muted); white-space:nowrap;}
+  .food button{background:var(--accent2); color:#fff; border-radius:9px; padding:7px 12px; font-size:14px;}
+
+  /* Plate */
+  .plate-item{display:flex; justify-content:space-between; align-items:center; gap:10px;
+              padding:9px 0; border-bottom:1px solid var(--line);}
+  .plate-item .x{background:transparent; color:var(--red); font-size:20px; padding:2px 8px;}
+  .plate-total{font-size:18px; font-weight:700; margin-top:10px;}
+
+  /* Result */
+  .result-carbs{text-align:center; padding:8px 0 4px;}
+  .result-carbs .n{font-size:54px; font-weight:800; line-height:1;}
+  .result-carbs .u{font-size:16px; color:var(--muted);}
+  .result-dose{text-align:center; background:var(--card2); border-radius:14px; padding:16px; margin:14px 0;}
+  .result-dose .n{font-size:40px; font-weight:800; line-height:1;}
+  .result-dose .u{font-size:14px; color:var(--muted);}
+  .breakdown{font-size:13px; color:var(--muted); margin-top:12px;}
+  .breakdown div{display:flex; justify-content:space-between; padding:3px 0;}
+  .alert{border-radius:12px; padding:13px 14px; margin:12px 0; font-size:15px; font-weight:600;}
+  .alert.red{background:rgba(239,68,68,.15); border:1px solid var(--red); color:#fecaca;}
+  .alert.amber{background:rgba(245,158,11,.15); border:1px solid var(--amber); color:#fde68a;}
+  .alert.green{background:rgba(34,197,94,.12); border:1px solid var(--green); color:#bbf7d0;}
+  .disclaimer{font-size:12px; color:var(--muted); line-height:1.5; margin-top:6px;}
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .note{font-size:12px; color:var(--muted); margin-top:6px;}
+  a{color:var(--accent);}
+  details.help{padding:0; overflow:hidden;}
+  details.help summary{list-style:none; cursor:pointer; padding:14px 16px; font-weight:700; font-size:16px;}
+  details.help summary::-webkit-details-marker{display:none;}
+  details.help summary::after{content:"▸"; float:right; color:var(--muted); transition:transform .2s;}
+  details.help[open] summary::after{transform:rotate(90deg);}
+  .help-body{padding:0 16px 14px; font-size:14px; color:var(--muted); line-height:1.55;}
+  .help-body p{margin:0 0 10px;}
+  .help-body strong{color:var(--txt);}
+  .help-body .ex{background:var(--card2); border-radius:10px; padding:10px 12px; color:var(--txt); font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bolus Helper</h1>
+  <p class="sub">A suggestion tool. Always enter your carbs into Loop and follow Loop. Not medical advice.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="home">Home</div>
+    <div class="tab" data-tab="food">Add Food</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <!-- ================= HOME ================= -->
+  <section id="home">
+    <details class="card help">
+      <summary>🎤 How to talk to it</summary>
+      <div class="help-body">
+        <p><strong>Anywhere you see a box, you can talk instead of type:</strong> tap the box, then tap the little microphone 🎤 on your keyboard and say it.</p>
+        <p><strong>Say a whole meal.</strong> In the “Say or type your meal” box, say what you’re eating and tap <em>Add it</em>:</p>
+        <p class="ex">“Big Mac, medium fries and a Coke”<br>“Ten piece nuggets and a Gatorade”<br>“Two slices of pizza and chocolate milk”</p>
+        <p><strong>Say your blood sugar too.</strong> Add it right in the sentence — “my blood sugar is 180 and a banana” — or tap the BG box and say the number.</p>
+        <p><strong>Know the carbs already?</strong> Just say them: “forty five carbs” or “25 grams.”</p>
+        <p><strong>Always check the list.</strong> It shows everything it added with a × to remove. Then tap Calculate — and remember, Loop has the final say.</p>
+      </div>
+    </details>
+    <div class="card">
+      <div class="row between">
+        <strong>Right now</strong>
+        <button class="btn-ghost btn-sm" id="refreshBtn">↻ Refresh</button>
+      </div>
+      <div class="stat-grid" style="margin-top:12px;">
+        <div class="stat"><div class="big" id="sBg">—</div><div class="unit">mg/dL</div><div class="lbl">BG</div></div>
+        <div class="stat"><div class="big" id="sTrend">—</div><div class="unit">&nbsp;</div><div class="lbl">Trend</div></div>
+        <div class="stat"><div class="big" id="sIob">—</div><div class="unit">units</div><div class="lbl">IOB</div></div>
+      </div>
+      <div class="src" id="srcLine"><span class="dot" style="background:var(--muted)"></span>Not loaded yet</div>
+
+      <div style="margin-top:14px;">
+        <div class="twocol">
+          <div>
+            <label>BG (manual)</label>
+            <input type="number" inputmode="numeric" id="mBg" placeholder="e.g. 140">
+          </div>
+          <div>
+            <label>IOB (manual)</label>
+            <input type="number" inputmode="decimal" step="0.05" id="mIob" placeholder="e.g. 1.2">
+          </div>
+        </div>
+        <p class="note">Auto-fills from Nightscout when available. You can type over them — or tap a box and use the 🎤 key on your keyboard to say the number.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row between">
+        <strong>Carbs for this meal</strong>
+        <span class="cb" style="color:var(--muted); font-size:13px;" id="plateCount">0 items</span>
+      </div>
+
+      <label style="margin-top:12px;">🎤 Say or type your meal</label>
+      <div class="row" style="gap:8px;">
+        <input type="text" id="voiceMeal" placeholder='e.g. “Big Mac, medium fries and a Coke”' style="flex:1;">
+        <button class="btn-ghost btn-sm" id="voiceAddBtn" style="white-space:nowrap;">Add it</button>
+      </div>
+      <p class="note">Tap the box, tap the 🎤 microphone key on your keyboard, and just say what you’re eating — then tap “Add it.”</p>
+      <div class="note" id="voiceResult" style="margin-top:2px;"></div>
+
+      <div id="plateList" style="margin-top:14px;"><p class="note">No food added yet. Say your meal above, use the “Add Food” tab, or type carbs below.</p></div>
+      <div style="margin-top:12px;">
+        <label>Or enter total carbs directly (grams)</label>
+        <input type="number" inputmode="numeric" id="manualCarbs" placeholder="e.g. 45">
+      </div>
+      <label class="row" style="margin-top:14px; align-items:center; gap:10px; color:var(--txt);">
+        <input type="checkbox" id="preMeal" style="width:22px; height:22px;">
+        <span style="font-size:14px;">Pre-meal mode (aim for 90 instead of 110)</span>
+      </label>
+    </div>
+
+    <button class="btn-primary" id="calcBtn">Calculate suggestion</button>
+
+    <div class="card hide" id="resultCard" style="margin-top:14px;">
+      <div id="alertSlot"></div>
+      <div class="result-carbs">
+        <div class="n" id="rCarbs">0</div>
+        <div class="u">grams of carbs → enter this into Loop</div>
+      </div>
+      <div class="result-dose">
+        <div class="u">Estimated bolus (for reference)</div>
+        <div class="n" id="rDose">0 u</div>
+        <div class="u" id="rTimeNote"></div>
+      </div>
+      <div class="breakdown" id="breakdown"></div>
+      <p class="disclaimer">
+        This number is only an estimate to sanity-check against Loop. Type your carbs into Loop and use
+        <strong>Loop’s</strong> recommendation. If BG is low, treat the low first. When unsure, text a parent.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= FOOD ================= -->
+  <section id="food" class="hide">
+    <div class="card">
+      <input class="search" type="search" id="foodSearch" placeholder="🔎 Search or 🎤 say a food (nuggets, pizza, Gatorade)">
+      <p class="note">🎤 Tip: tap the box, tap the microphone key on your keyboard, and say the food. Carb values are estimates — check packaging when you can. Tap + to add it to your meal.</p>
+      <div id="foodList"></div>
+    </div>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section id="settings" class="hide">
+    <div class="card">
+      <strong>Nightscout</strong>
+      <p class="note">Your trends site. Leave the token blank if the site opens without a password.</p>
+      <label style="margin-top:10px;">Site URL</label>
+      <input type="url" id="nsUrl" placeholder="https://hudsonloop.herokuapp.com">
+      <label style="margin-top:10px;">Read token (optional)</label>
+      <input type="text" id="nsToken" placeholder="leave blank if not needed">
+      <button class="btn-ghost" style="width:100%; margin-top:12px;" id="testBtn">Test connection</button>
+      <div class="note" id="testResult"></div>
+    </div>
+
+    <div class="card">
+      <strong>Insulin settings</strong>
+      <p class="note">These match Loop’s Therapy Settings (set by the doctor). The app picks the right value for the time of day automatically. Edit if the doctor changes them.</p>
+
+      <label style="margin-top:10px;">Target BG (mg/dL)</label>
+      <input type="number" inputmode="numeric" id="setTarget" value="110">
+
+      <label style="margin-top:10px;">Pre-meal target (mg/dL)</label>
+      <input type="number" inputmode="numeric" id="setPre" value="90">
+
+      <label style="margin-top:10px;">Glucose safety limit — never bolus below this (mg/dL)</label>
+      <input type="number" inputmode="numeric" id="setSafety" value="75">
+
+      <label style="margin-top:10px;">Maximum bolus — warn above this (units)</label>
+      <input type="number" inputmode="decimal" step="0.5" id="setMax" value="7">
+
+      <label style="margin-top:14px;">Carb ratios (grams per unit) by time</label>
+      <textarea id="setICR" rows="5" style="width:100%; background:var(--card2); border:1px solid var(--line); color:var(--txt); border-radius:12px; padding:12px; font-size:15px; font-family:inherit;">00:00 = 24
+05:00 = 10
+09:00 = 14
+11:00 = 20
+17:00 = 18</textarea>
+
+      <label style="margin-top:10px;">Insulin sensitivity (mg/dL per unit) by time</label>
+      <textarea id="setISF" rows="3" style="width:100%; background:var(--card2); border:1px solid var(--line); color:var(--txt); border-radius:12px; padding:12px; font-size:15px; font-family:inherit;">00:00 = 60
+11:00 = 70
+20:00 = 80</textarea>
+
+      <button class="btn-primary" style="margin-top:14px;" id="saveSettings">Save settings</button>
+      <div class="note" id="saveResult"></div>
+    </div>
+
+    <div class="card">
+      <strong>How the math works</strong>
+      <p class="note" style="line-height:1.6;">
+        Carb dose = carbs ÷ carb ratio.<br>
+        Correction = (BG − target) ÷ sensitivity.<br>
+        Suggestion = carb dose + correction − insulin on board, rounded to 0.05 u, never below 0,
+        never above your max bolus, and never when BG is under the safety limit.
+        This mirrors how Loop thinks, but Loop is always the final word.
+      </p>
+    </div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Food knowledge base (carbs in grams; estimates) ---------- */
+const FOODS = [
+  // McDonald's
+  ["McDonald’s","Hamburger",31],["McDonald’s","Cheeseburger",32],["McDonald’s","Double Cheeseburger",33],
+  ["McDonald’s","McDouble",33],["McDonald’s","Big Mac",45],["McDonald’s","Quarter Pounder w/ Cheese",42],
+  ["McDonald’s","McChicken",40],["McDonald’s","Filet-O-Fish",38],["McDonald’s","McNuggets (4 pc)",10],
+  ["McDonald’s","McNuggets (6 pc)",16],["McDonald’s","McNuggets (10 pc)",27],["McDonald’s","Fries (small)",29],
+  ["McDonald’s","Fries (medium)",43],["McDonald’s","Fries (large)",63],["McDonald’s","Hash Brown",15],
+  ["McDonald’s","Egg McMuffin",30],["McDonald’s","Hotcakes (3)",60],["McDonald’s","Apple Slices",4],
+  ["McDonald’s","Vanilla Cone",24],["McDonald’s","Oreo McFlurry (regular)",80],["McDonald’s","Chocolate Shake (small)",60],
+  // Burger King
+  ["Burger King","Whopper",49],["Burger King","Whopper Jr.",27],["Burger King","Cheeseburger",27],
+  ["Burger King","Chicken Fries (9 pc)",20],["Burger King","Original Chicken Sandwich",49],
+  ["Burger King","Nuggets (8 pc)",22],["Burger King","Fries (small)",32],["Burger King","Fries (medium)",46],
+  // Wendy's
+  ["Wendy’s","Jr. Hamburger",25],["Wendy’s","Jr. Cheeseburger",27],["Wendy’s","Dave’s Single",39],
+  ["Wendy’s","Spicy Chicken Sandwich",49],["Wendy’s","Nuggets (4 pc)",11],["Wendy’s","Nuggets (6 pc)",17],
+  ["Wendy’s","Nuggets (10 pc)",28],["Wendy’s","Fries (small)",45],["Wendy’s","Fries (medium)",56],
+  ["Wendy’s","Chili (small)",23],["Wendy’s","Frosty (small)",52],
+  // Chick-fil-A
+  ["Chick-fil-A","Chicken Sandwich",41],["Chick-fil-A","Spicy Chicken Sandwich",45],["Chick-fil-A","Nuggets (4 pc)",6],
+  ["Chick-fil-A","Nuggets (8 pc)",11],["Chick-fil-A","Nuggets (12 pc)",17],["Chick-fil-A","Strips (3 pc)",19],
+  ["Chick-fil-A","Waffle Fries (small)",32],["Chick-fil-A","Waffle Fries (medium)",45],["Chick-fil-A","Mac & Cheese (medium)",31],
+  ["Chick-fil-A","Fruit Cup",16],["Chick-fil-A","Chocolate Milkshake",95],["Chick-fil-A","Lemonade (small)",30],
+  ["Chick-fil-A","Chick-fil-A Sauce",6],["Chick-fil-A","Polynesian Sauce",13],
+  // Taco Bell
+  ["Taco Bell","Crunchy Taco",13],["Taco Bell","Soft Taco",18],["Taco Bell","Doritos Locos Taco",13],
+  ["Taco Bell","Bean Burrito",54],["Taco Bell","Burrito Supreme",51],["Taco Bell","Crunchwrap Supreme",71],
+  ["Taco Bell","Chicken Quesadilla",37],["Taco Bell","Cinnamon Twists",27],["Taco Bell","Nachos BellGrande",80],
+  ["Taco Bell","Mexican Pizza",47],
+  // Subway (6-inch)
+  ["Subway","Turkey 6-inch",46],["Subway","Ham 6-inch",46],["Subway","Italian B.M.T. 6-inch",46],
+  ["Subway","Meatball Marinara 6-inch",49],["Subway","Tuna 6-inch",44],["Subway","Veggie 6-inch",44],
+  ["Subway","Chicken Teriyaki 6-inch",59],["Subway","Cookie (1)",30],
+  // Chipotle (components)
+  ["Chipotle","Flour Tortilla",50],["Chipotle","White Rice",40],["Chipotle","Brown Rice",36],
+  ["Chipotle","Black Beans",22],["Chipotle","Pinto Beans",21],["Chipotle","Chicken/Steak",1],
+  ["Chipotle","Guacamole",8],["Chipotle","Chips",73],["Chipotle","Burrito Bowl (rice+beans)",62],
+  // Pizza
+  ["Pizza","Pizza Hut Cheese (1 med slice)",30],["Pizza","Pizza Hut Pepperoni (1 med slice)",31],
+  ["Pizza","Personal Pan Pizza (whole)",70],["Pizza","Domino’s Cheese (1 med slice)",33],
+  ["Pizza","Domino’s Pepperoni (1 med slice)",34],["Pizza","Little Caesars Cheese (1 slice)",30],
+  ["Pizza","Cafeteria Pizza (1 slice)",35],
+  // KFC
+  ["KFC","Original Chicken Breast",11],["KFC","Drumstick",4],["KFC","Popcorn Chicken (small)",19],
+  ["KFC","Mashed Potatoes & Gravy",19],["KFC","Mac & Cheese",19],["KFC","Biscuit",23],["KFC","Famous Bowl",78],
+  // Starbucks / Dunkin
+  ["Starbucks","Hot Chocolate (grande)",44],["Starbucks","Vanilla Latte (grande)",35],
+  ["Starbucks","Caramel Frappuccino (grande)",54],["Starbucks","Strawberry Açaí Refresher (grande)",36],
+  ["Starbucks","Cake Pop",23],["Starbucks","Chocolate Croissant",39],["Starbucks","Plain Bagel",56],
+  ["Dunkin","Glazed Donut",22],["Dunkin","Boston Kreme Donut",36],["Dunkin","Munchkin (glazed, 1)",6],
+  ["Dunkin","Bagel (plain)",65],["Dunkin","Hash Browns",14],["Dunkin","Frozen Coffee (medium)",84],
+  // School lunch / cafeteria
+  ["School Lunch","Cafeteria Cheese Pizza (slice)",35],["School Lunch","Chicken Nuggets (5 pc)",15],
+  ["School Lunch","French Fries (serving)",30],["School Lunch","Mac & Cheese (1 cup)",35],
+  ["School Lunch","Hamburger (with bun)",33],["School Lunch","Hot Dog (with bun)",24],
+  ["School Lunch","Spaghetti (1 cup)",43],["School Lunch","White Rice (1 cup)",45],
+  ["School Lunch","Mashed Potatoes (1 cup)",35],["School Lunch","Corn (1 cup)",30],
+  ["School Lunch","Dinner Roll",15],["School Lunch","Large Cookie",40],
+  // Snacks
+  ["Snacks","Lunchables Turkey & Cheddar",23],["Snacks","Lunchables Pizza",36],
+  ["Snacks","Goldfish (small bag 1.5 oz)",30],["Snacks","Goldfish (handful ~55)",20],
+  ["Snacks","Cheez-Its (1 oz)",17],["Snacks","Doritos (1 oz bag)",18],["Snacks","Lay’s Classic (1 oz bag)",15],
+  ["Snacks","Cheetos (1 oz)",13],["Snacks","Pretzels (1 oz)",22],["Snacks","Soft Pretzel",50],
+  ["Snacks","Nature Valley Crunchy (2 bars)",29],["Snacks","Quaker Chewy Bar",19],
+  ["Snacks","Rice Krispies Treat",17],["Snacks","Pop-Tart (1)",34],["Snacks","Pop-Tarts (2)",67],
+  ["Snacks","Fruit Snacks (1 pouch)",21],["Snacks","Saltine Crackers (5)",10],
+  ["Snacks","Oreos (3)",25],["Snacks","Chips Ahoy! (3)",22],["Snacks","PB&J Sandwich",35],
+  ["Snacks","Bagel w/ Cream Cheese",60],["Snacks","Cereal w/ Milk (1 cup)",35],
+  // Candy
+  ["Candy","Snickers (full)",33],["Candy","Snickers (fun size)",11],["Candy","Kit Kat (full)",27],
+  ["Candy","M&M’s (1.69 oz)",34],["Candy","Skittles (regular bag)",47],["Candy","Reese’s (2 cups)",24],
+  ["Candy","Twix (full)",37],["Candy","Starburst (1 pack)",41],["Candy","Gummy Bears (1 bag)",30],
+  // Fruit / dairy
+  ["Fruit & Dairy","Banana (medium)",27],["Fruit & Dairy","Apple (medium)",25],["Fruit & Dairy","Orange (medium)",15],
+  ["Fruit & Dairy","Grapes (1 cup)",16],["Fruit & Dairy","Applesauce Cup",13],["Fruit & Dairy","Baby Carrots (handful)",6],
+  ["Fruit & Dairy","String Cheese",1],["Fruit & Dairy","Go-Gurt Tube",13],["Fruit & Dairy","Yogurt Cup",15],
+  ["Fruit & Dairy","Ice Cream (1/2 cup)",16],["Fruit & Dairy","Popsicle",11],
+  // Drinks
+  ["Drinks","Chocolate Milk (8 oz carton)",26],["Drinks","White Milk (8 oz carton)",12],
+  ["Drinks","Capri Sun",16],["Drinks","Gatorade (20 oz)",36],["Drinks","Powerade (20 oz)",35],
+  ["Drinks","Coke (12 oz can)",39],["Drinks","Sprite (12 oz can)",38],["Drinks","Apple Juice (box)",23],
+  ["Drinks","Orange Juice (8 oz)",26],["Drinks","Lemonade (12 oz)",37],
+  // Lows / treating
+  ["Treat a Low","Juice Box (15 g)",15],["Treat a Low","Glucose Tabs (4)",16],
+  ["Treat a Low","Smarties (1 roll)",6],["Treat a Low","Skittles (15 g)",15],["Treat a Low","Honey (1 tbsp)",17],
+];
+
+/* ---------- State ---------- */
+let plate = [];               // {name, carbs}
+const $ = id => document.getElementById(id);
+
+const DEFAULTS = {
+  url:"https://hudsonloop.herokuapp.com", token:"",
+  target:110, pre:90, safety:75, max:7,
+  icr:"00:00 = 24\n05:00 = 10\n09:00 = 14\n11:00 = 20\n17:00 = 18",
+  isf:"00:00 = 60\n11:00 = 70\n20:00 = 80"
+};
+
+/* ---------- Persistence (Safari localStorage) ---------- */
+function loadSettings(){
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem("bolusSettings")||"{}"); } catch(e){}
+  s = Object.assign({}, DEFAULTS, s);
+  $("nsUrl").value=s.url; $("nsToken").value=s.token;
+  $("setTarget").value=s.target; $("setPre").value=s.pre;
+  $("setSafety").value=s.safety; $("setMax").value=s.max;
+  $("setICR").value=s.icr; $("setISF").value=s.isf;
+  return s;
+}
+function settings(){
+  return {
+    url:$("nsUrl").value.trim().replace(/\/+$/,""), token:$("nsToken").value.trim(),
+    target:+$("setTarget").value, pre:+$("setPre").value,
+    safety:+$("setSafety").value, max:+$("setMax").value,
+    icr:$("setICR").value, isf:$("setISF").value
+  };
+}
+function saveSettings(){
+  const s = settings();
+  localStorage.setItem("bolusSettings", JSON.stringify(s));
+  $("saveResult").textContent = "✓ Saved.";
+  setTimeout(()=>$("saveResult").textContent="",2500);
+}
+
+/* ---------- Time-of-day schedule lookup ---------- */
+function parseSchedule(text){
+  const out = [];
+  text.split("\n").forEach(line=>{
+    const m = line.match(/(\d{1,2}):(\d{2})\s*=\s*([\d.]+)/);
+    if(m){ out.push({mins:+m[1]*60 + +m[2], val:+m[3]}); }
+  });
+  out.sort((a,b)=>a.mins-b.mins);
+  return out;
+}
+function scheduledValue(text, now){
+  const sched = parseSchedule(text);
+  if(!sched.length) return null;
+  const mins = now.getHours()*60 + now.getMinutes();
+  let v = sched[sched.length-1].val; // wrap: before first entry uses last (midnight)
+  for(const e of sched){ if(mins >= e.mins) v = e.val; }
+  return v;
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    ["home","food","settings"].forEach(id=>$(id).classList.add("hide"));
+    $(t.dataset.tab).classList.remove("hide");
+  });
+});
+
+/* ---------- Food list rendering ---------- */
+function renderFoods(filter=""){
+  const f = filter.toLowerCase();
+  const list = $("foodList"); list.innerHTML="";
+  let cat=null;
+  FOODS.filter(x => !f || x[1].toLowerCase().includes(f) || x[0].toLowerCase().includes(f))
+       .forEach(([category,name,carbs])=>{
+    if(category!==cat){ cat=category; const h=document.createElement("div"); h.className="cat"; h.textContent=category; list.appendChild(h); }
+    const row=document.createElement("div"); row.className="food";
+    row.innerHTML = `<div><div class="nm">${name}</div><div class="cb">${carbs} g carbs</div></div>`;
+    const b=document.createElement("button"); b.textContent="+ Add";
+    b.onclick=()=>{ plate.push({name,carbs}); renderPlate(); flash(b); };
+    row.appendChild(b); list.appendChild(row);
+  });
+  if(!list.children.length){ list.innerHTML='<p class="note">No matches. Try a different word, or type carbs directly on the Home tab.</p>'; }
+}
+function flash(b){ const t=b.textContent; b.textContent="✓"; setTimeout(()=>b.textContent=t,600); }
+$("foodSearch").addEventListener("input", e=>renderFoods(e.target.value));
+
+/* ---------- Plate ---------- */
+function renderPlate(){
+  const list=$("plateList");
+  if(!plate.length){ list.innerHTML='<p class="note">No food added yet. Use the “Add Food” tab, or type carbs below.</p>'; $("plateCount").textContent="0 items"; return; }
+  list.innerHTML="";
+  plate.forEach((it,i)=>{
+    const row=document.createElement("div"); row.className="plate-item";
+    row.innerHTML=`<span>${it.name} <span class="cb" style="color:var(--muted)">(${it.carbs} g)</span></span>`;
+    const x=document.createElement("button"); x.className="x"; x.textContent="×";
+    x.onclick=()=>{ plate.splice(i,1); renderPlate(); };
+    row.appendChild(x); list.appendChild(row);
+  });
+  const tot=plate.reduce((a,b)=>a+b.carbs,0);
+  const t=document.createElement("div"); t.className="plate-total"; t.textContent=`Subtotal: ${tot} g`;
+  list.appendChild(t);
+  $("plateCount").textContent = plate.length+(plate.length===1?" item":" items");
+}
+
+/* ---------- Nightscout fetch ---------- */
+const TREND = {DoubleUp:"↑↑",SingleUp:"↑",FortyFiveUp:"↗",Flat:"→",FortyFiveDown:"↘",SingleDown:"↓",DoubleDown:"↓↓",NONE:"—","":"—"};
+async function fetchNS(showStatus){
+  const s = settings();
+  if(!s.url){ if(showStatus) $("srcLine").innerHTML='<span class="dot" style="background:var(--amber)"></span>No site set. Use manual entry or add it in Settings.'; return; }
+  const tk = s.token ? ("token="+encodeURIComponent(s.token)) : "";
+  const sep = q => q ? "?"+q : "";
+  try{
+    const [bgR, dsR] = await Promise.all([
+      fetch(`${s.url}/api/v1/entries/sgv.json?count=1${tk?"&"+tk:""}`),
+      fetch(`${s.url}/api/v1/devicestatus.json?count=1${tk?"&"+tk:""}`)
+    ]);
+    const bg = await bgR.json();
+    const ds = await dsR.json();
+    let sgv=null, dir="", iob=null, mins=null;
+    if(Array.isArray(bg) && bg[0]){
+      sgv = bg[0].sgv; dir = bg[0].direction||"";
+      if(bg[0].date) mins = Math.round((Date.now()-bg[0].date)/60000);
+    }
+    if(Array.isArray(ds) && ds[0]){
+      const d=ds[0];
+      iob = (d.loop && d.loop.iob && typeof d.loop.iob.iob==="number") ? d.loop.iob.iob
+          : (d.openaps && d.openaps.iob && typeof d.openaps.iob.iob==="number") ? d.openaps.iob.iob
+          : null;
+    }
+    if(sgv!=null){ $("sBg").textContent=sgv; if(!$("mBg").value) $("mBg").value=sgv; }
+    $("sTrend").textContent = TREND[dir]!==undefined?TREND[dir]:"—";
+    if(iob!=null){ const r=Math.round(iob*100)/100; $("sIob").textContent=r; if(!$("mIob").value) $("mIob").value=r; }
+    const ago = mins!=null ? ` · ${mins} min ago` : "";
+    $("srcLine").innerHTML = `<span class="dot" style="background:var(--green)"></span>Live from Nightscout${ago}`;
+  }catch(e){
+    if(showStatus) $("srcLine").innerHTML='<span class="dot" style="background:var(--amber)"></span>Couldn’t reach the site. Enter BG &amp; IOB manually below.';
+  }
+}
+$("refreshBtn").addEventListener("click",()=>{ $("srcLine").innerHTML='<span class="dot" style="background:var(--accent)"></span>Loading…'; fetchNS(true); });
+
+$("testBtn").addEventListener("click", async ()=>{
+  $("testResult").textContent="Testing…";
+  const s=settings();
+  try{
+    const r=await fetch(`${s.url}/api/v1/entries/sgv.json?count=1${s.token?"&token="+encodeURIComponent(s.token):""}`);
+    const j=await r.json();
+    if(Array.isArray(j)&&j[0]&&typeof j[0].sgv==="number") $("testResult").textContent=`✓ Connected. Latest BG: ${j[0].sgv} mg/dL.`;
+    else $("testResult").textContent="Connected but no data returned. You may need a read token.";
+  }catch(e){ $("testResult").textContent="✗ Could not connect. Check the URL, or the site may be asleep — open it once in Safari and retry."; }
+});
+
+/* ---------- Calculation ---------- */
+function round05(x){ return Math.round(x/0.05)*0.05; }
+function fmtU(x){ return (Math.round(x*100)/100).toFixed(2).replace(/\.?0+$/,"")+" u"; }
+
+function calculate(){
+  const s = settings();
+  const now = new Date();
+  const icr = scheduledValue(s.icr, now);
+  const isf = scheduledValue(s.isf, now);
+  const preMeal = $("preMeal").checked;
+  const target = preMeal ? s.pre : s.target;
+
+  const plateCarbs = plate.reduce((a,b)=>a+b.carbs,0);
+  const typed = parseFloat($("manualCarbs").value)||0;
+  const carbs = plateCarbs + typed;
+
+  const bgVal = $("mBg").value!=="" ? parseFloat($("mBg").value) : null;
+  const iobVal = $("mIob").value!=="" ? (parseFloat($("mIob").value)||0) : 0;
+
+  $("resultCard").classList.remove("hide");
+  $("rCarbs").textContent = carbs;
+  const alertSlot = $("alertSlot"); alertSlot.innerHTML="";
+  const bd = $("breakdown"); bd.innerHTML="";
+
+  if(!icr || !isf){
+    alertSlot.innerHTML = '<div class="alert red">Insulin settings missing. Check the Settings tab.</div>';
+    $("rDose").textContent="—"; return;
+  }
+
+  // Safety: low BG
+  if(bgVal!=null && bgVal < s.safety){
+    alertSlot.innerHTML = `<div class="alert red">⚠️ BG is ${bgVal} — below the safety limit of ${s.safety}. Treat the low first with fast carbs. Do NOT give insulin now. Tell a parent.</div>`;
+    $("rDose").textContent="0 u";
+    $("rTimeNote").textContent="";
+    return;
+  }
+
+  const carbDose = icr ? carbs/icr : 0;
+  let correction = (bgVal!=null) ? (bgVal - target)/isf : 0;
+  let total = carbDose + correction - iobVal;
+  if(total < 0) total = 0;
+
+  let rounded = round05(total);
+  $("rTimeNote").textContent = `at ${now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})} · ratio 1:${icr} · ISF ${isf}`;
+
+  // Warnings
+  if(bgVal==null){
+    alertSlot.innerHTML += '<div class="alert amber">No BG entered, so this covers carbs only (no correction). Add a BG for a full suggestion.</div>';
+  }
+  if(bgVal!=null && bgVal < target && carbs>0){
+    alertSlot.innerHTML += `<div class="alert amber">BG ${bgVal} is a little low. Consider eating first / dosing after, and watch closely.</div>`;
+  }
+  if(rounded > s.max){
+    alertSlot.innerHTML += `<div class="alert amber">This is above the max bolus of ${s.max} u. Double-check with a parent before dosing this much.</div>`;
+    rounded = s.max;
+  }
+  if(rounded === 0 && carbs===0 && (bgVal==null || bgVal<=target)){
+    alertSlot.innerHTML += '<div class="alert green">No insulin suggested right now.</div>';
+  }
+
+  $("rDose").textContent = fmtU(rounded);
+
+  // Breakdown
+  const line=(l,v)=>{ const d=document.createElement("div"); d.innerHTML=`<span>${l}</span><span>${v}</span>`; bd.appendChild(d); };
+  line("Carbs", carbs+" g");
+  line("Carb dose ("+carbs+" ÷ "+icr+")", fmtU(carbDose));
+  if(bgVal!=null) line(`Correction ((${bgVal} − ${target}) ÷ ${isf})`, (correction>=0?"+":"")+fmtU(correction));
+  if(iobVal) line("Insulin on board", "− "+fmtU(iobVal));
+  line("Suggested (rounded to 0.05)", fmtU(rounded));
+}
+$("calcBtn").addEventListener("click", calculate);
+
+/* ---------- Voice / natural-language quick add ---------- */
+const NUMWORDS = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,a:1,an:1};
+function norm(s){ return (s||"").toLowerCase().replace(/[’'`]/g,"").replace(/\([^)]*\)/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim(); }
+function esc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+// Build alias groups: normalized food name -> [indexes sharing it (size variants)]
+const ALIAS = {};
+FOODS.forEach((f,i)=>{ const a=norm(f[1]); if(a){ (ALIAS[a]=ALIAS[a]||[]).push(i); } });
+const ALIAS_KEYS = Object.keys(ALIAS).sort((a,b)=>b.length-a.length); // match longer phrases first
+
+function pickVariant(idxs, text){
+  if(idxs.length===1) return idxs[0];
+  for(const hint of ["large","medium","small"]){
+    if(text.includes(hint)){ const m=idxs.find(i=>FOODS[i][1].toLowerCase().includes(hint)); if(m!=null) return m; }
+  }
+  const pc = text.match(/(\d{1,2})\s*(?:pc|piece|pieces|count|ct)/);
+  if(pc){ const n=pc[1]; const m=idxs.find(i=>FOODS[i][1].includes("("+n+" ")||FOODS[i][1].includes("("+n+")")); if(m!=null) return m; }
+  return idxs[0];
+}
+
+function parseSpoken(raw){
+  let text = " "+norm(raw)+" ";
+  const added=[], notes=[];
+  // Blood glucose
+  const bgm = text.match(/(?:blood sugar|sugar|glucose|bg)\D{0,8}(\d{2,3})/);
+  if(bgm){ $("mBg").value=bgm[1]; notes.push("BG set to "+bgm[1]); text=text.replace(bgm[0]," "); }
+  // Explicit carbs ("45 grams", "30 carbs")
+  const carbRe=/(\d{1,3})\s*(?:grams?|g|carbs?)\b/g; let cm, carbSum=0;
+  while((cm=carbRe.exec(text))){ carbSum+=+cm[1]; }
+  if(carbSum>0){ plate.push({name:carbSum+" g (said)", carbs:carbSum}); added.push(carbSum+" g"); text=text.replace(carbRe," "); }
+  // Foods
+  for(const a of ALIAS_KEYS){
+    const pat = new RegExp("\\b(?:(\\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a|an)\\s+)?"+esc(a)+"\\b");
+    const mm = pat.exec(text);
+    if(mm){
+      let qty=1;
+      if(mm[1]){ qty = NUMWORDS[mm[1]]!=null?NUMWORDS[mm[1]]:(parseInt(mm[1])||1); }
+      const idx = pickVariant(ALIAS[a], text);
+      for(let q=0;q<Math.min(qty,12);q++){ plate.push({name:FOODS[idx][1], carbs:FOODS[idx][2]}); }
+      added.push((qty>1?qty+"× ":"")+FOODS[idx][1]);
+      text = text.replace(new RegExp(esc(a),"g")," ");
+    }
+  }
+  renderPlate();
+  return {added, notes, leftover:text};
+}
+
+$("voiceAddBtn").addEventListener("click", ()=>{
+  const raw=$("voiceMeal").value.trim();
+  if(!raw){ $("voiceResult").textContent="Tap the box and say (or type) your meal first."; return; }
+  const r=parseSpoken(raw);
+  let msg="";
+  if(r.added.length) msg+="✓ Added: "+r.added.join(", ")+". ";
+  if(r.notes.length) msg+=r.notes.join("; ")+". ";
+  const leftover = r.leftover
+    .replace(/\b(and|with|the|of|some|please|i|im|had|ate|eating|have|having|plus|also|my|is|are|piece|pieces|pc|slice|slices|cup|cups|bag|bags|can|cans|bottle|glass|box|order|small|medium|large|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a|an)\b/g," ")
+    .replace(/\d+/g," ").replace(/\s+/g," ").trim();
+  if(leftover){ msg+="Didn’t recognize “"+leftover+"” — try the Add Food tab to search it."; $("foodSearch").value=leftover; renderFoods(leftover); }
+  if(!msg) msg="Nothing recognized. Try the Add Food tab.";
+  $("voiceResult").textContent = msg;
+  $("voiceMeal").value="";
+});
+
+/* ---------- Init ---------- */
+loadSettings();
+renderFoods();
+renderPlate();
+$("saveSettings").addEventListener("click", saveSettings);
+fetchNS(true);
+</script>
+</body>
+</html>
